@@ -6,7 +6,8 @@ import time
 
 if platform.system() == 'Windows':
     #greateyesDLL = ctypes.WinDLL("greateyes.dll")
-    greateyesDLL = ctypes.LoadLibraryEx("greateyes.dll", NULL, LOAD_LIBRARY_AS_DATAFILE);
+    #greateyesDLL = ctypes.LoadLibraryEx("greateyes.dll", NULL, LOAD_LIBRARY_AS_DATAFILE);
+    greateyesDLL = ctypes.LibraryLoader("greateyes.dll")
     c_PixelDataType16bit = ctypes.c_ushort
     c_PixelDataType32bit = ctypes.c_ulong
 elif platform.system() == 'Linux':
