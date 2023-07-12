@@ -3,6 +3,7 @@ from PyQt6 import QtCore, QtWidgets
 import logging
 import CameraSystem
 import StageController
+import numpy
 
 
 #define data folder

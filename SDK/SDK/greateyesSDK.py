@@ -1,12 +1,28 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 18 11:21:55 2020
+20200512 Updated SetFunctions
+20220214 Updated GetSensorOutputModeStrings (SDK 22.5)
+
+@author: Marcel Behrendt
+
+This python wrapper makes all functions from the greateyes.dll available to python users using either windows or linux operating systems.
+The appropriate greateyes SDK needs to be located in a directory, included in PATH.
+
+"""
+
 import ctypes
+from ctypes import *
 import numpy as np
 import sys
 import platform
 import time
 
 if platform.system() == 'Windows':
-    #greateyesDLL = ctypes.WinDLL("greateyes.dll")
-    greateyesDLL = ctypes.LoadLibraryEx("greateyes.dll", NULL, LOAD_LIBRARY_AS_DATAFILE);
+    #greateyesDLL = ctypes.WinDLL("M:\Testsoftware\geVision\greateyes.dll")
+    #greateyesDLL = ctypes.WinDLL(r"C:\greateyes.dll")
+    #greateyesDLL = ctypes.cdll.LoadLibrary("greateyes.dll")
+    greateyesDLL = ctypes.LibraryLoader("greateyes.dll")
     c_PixelDataType16bit = ctypes.c_ushort
     c_PixelDataType32bit = ctypes.c_ulong
 elif platform.system() == 'Linux':
@@ -59,8 +75,8 @@ TemperatureHardwareOption = int(42223)
 maxPixelBurstTransfer = int(8823794)
 
 sensorFeature_capacityMode = int(0)
-sensorFeature_binningX = int(1)
-sensorFeature_cropX = int(2)
+sensorFeature_binningX = int(2)
+sensorFeature_cropX = int(1)
 
 readoutSpeed_50_kHz = int(50)
 readoutSpeed_100_kHz = int(100)
@@ -1068,10 +1084,9 @@ def GetNumberOfSensorOutputModes(addr=0):
 
 # returns a string containing information on the single indexed output mode
 # In: index         [ 0 .. (NumberOfSensorOutputModes - 1) ]
-# In: modelID       camera specific modelID
-#                   you get this ID from the function "ConnectCamera"
+# In: addr	         index of connected devices; begins at addr = 0 for first device
 # Result: string    output mode string
-def GetSensorOutputModeStrings(index, modelID):
+def GetSensorOutputModeStrings(index, addr = 0):
     # referring to DLL function
     geFunc = greateyesDLL.GetSensorOutputModeStrings
     geFunc.restype = ctypes.c_char_p
@@ -1080,10 +1095,10 @@ def GetSensorOutputModeStrings(index, modelID):
     geFunc.argtypes = [ctypes.c_int, ctypes.c_int]
 
     om_index = ctypes.c_int(index)
-    modelID = ctypes.c_int(modelID)
+    ge_addr = ctypes.c_int(addr)
 
     # calling function
-    ModeString = geFunc(om_index, modelID)
+    ModeString = geFunc(om_index, ge_addr)
 
     # extracting values
     OutputModeString = ModeString.decode('ASCII')
@@ -1279,7 +1294,7 @@ def StartMeasurement_DynBitDepth(correctBias = False, showSync = True, showShutt
     retValue = geFunc(ge_correctBias, ge_showSync, ge_showShutter, ge_triggerMode, ge_statusMSG, ge_addr)
 
     # returning return value
-    UpdateStatus
+    UpdateStatus()
     return retValue
 
 #--------------------------------------------------------------------------------------------------------
@@ -1303,8 +1318,11 @@ def GetMeasurementData_DynBitDepth(addr = 0):
         c_PixelDataType = c_PixelDataType32bit
         py_PixelDataType = np.uint32
     else:
-        print('GetImageSize returned unexpected value for bitDepth')
-        sys.exit()
+        print('GetImageSize returned unexpected value for bitDepth.')
+        print('DataDimensions:', DataDimensions)
+        UpdateStatus()
+        print(Status, StatusMSG)
+        return False
 
     # casting arguments
     geFunc.argtypes = [ctypes.POINTER(c_PixelDataType), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
@@ -1326,7 +1344,7 @@ def GetMeasurementData_DynBitDepth(addr = 0):
     else:
         imageData = np.ndarray((DataDimensions[0],DataDimensions[1]),dtype=py_PixelDataType)
     # returning return value
-    UpdateStatus
+    UpdateStatus()
     return imageData
 
 #--------------------------------------------------------------------------------------------------------
@@ -1355,8 +1373,11 @@ def PerformMeasurement_Blocking_DynBitDepth(correctBias = False, showSync = True
         c_PixelDataType = c_PixelDataType32bit
         py_PixelDataType = np.uint32
     else:
-        print('GetImageSize returned unexpected value for bitDepth')
-        sys.exit()
+        print('GetImageSize returned unexpected value for bitDepth.')
+        print('DataDimensions:', DataDimensions)
+        UpdateStatus()
+        print(Status, StatusMSG)
+        return False
 
     # casting arguments
     geFunc.argtypes = [ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_int,ctypes.POINTER(c_PixelDataType) , ctypes.POINTER(ctypes.c_int), ctypes.c_int]
@@ -1384,7 +1405,7 @@ def PerformMeasurement_Blocking_DynBitDepth(correctBias = False, showSync = True
         imageData = np.ndarray((DataDimensions[0],DataDimensions[1]),dtype=py_PixelDataType)
 
     # returning return value
-    UpdateStatus
+    UpdateStatus()
     return imageData
 
 #--------------------------------------------------------------------------------------------------------
@@ -1408,5 +1429,3 @@ def StopMeasurement(addr = 0):
 
     # returning return value
     return retValue
-
-
